@@ -4,8 +4,10 @@ import re
 from typing import List
 
 import ffmpeg
+from ffmpeg import Error as FFmpegError
 
 from constants import MAIN_FOLDER, RESULT_FOLDER
+from validators import is_valid_image_extension
 
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -23,7 +25,7 @@ def find_sequences(path, folder) -> List[str]:
     video_name_list = []
 
     for file in os.listdir(f'{path}/{folder}'):
-        if (file.endswith(".jpg")):
+        if is_valid_image_extension(file):
             num_part = ''
             file, separator = file.split('.jpg')
             file = file[::-1]
@@ -52,8 +54,8 @@ def main():
                         .output(f'{RESULT_FOLDER}/{sequence}.mp4')
                         .run()
                     )
-                except:
-                    print('Oooops!')
+                except FFmpegError as error:
+                    print(error)
 
 
 if __name__ == "__main__":
