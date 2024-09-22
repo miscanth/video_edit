@@ -3,6 +3,7 @@ from pathlib import Path
 import re
 from typing import List
 
+from constants import EXTENSION
 import ffmpeg
 from ffmpeg import Error as FFmpegError
 
@@ -27,7 +28,7 @@ def find_sequences(path, folder) -> List[str]:
     for file in os.listdir(f'{path}/{folder}'):
         if is_valid_image_extension(file):
             num_part = ''
-            file, separator = file.split('.jpg')
+            file, separator = file.split(EXTENSION)
             file = file[::-1]
             for i in file:
                 if re.search(r'\d', i):
@@ -50,7 +51,7 @@ def main():
                 try:
                     (
                         ffmpeg
-                        .input(f'{path}/{folder}/{sequence}*.jpg', pattern_type='glob', framerate=24)
+                        .input(f'{path}/{folder}/{sequence}*{EXTENSION}', pattern_type='glob', framerate=24)
                         .output(f'{RESULT_FOLDER}/{sequence}.mp4')
                         .run()
                     )
@@ -58,5 +59,5 @@ def main():
                     print(error)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
