@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 import re
 from typing import List
+import uuid
 
 from constants import EXTENSION
 import ffmpeg
@@ -18,45 +19,69 @@ data_folder = BASE_DIR / MAIN_FOLDER
 os.makedirs(RESULT_FOLDER, exist_ok=True)
 
 
-def find_sequences(path, folder) -> List[str]:
+class Video:
+    """Класс для видео объектов."""
+    def __init__(self, path, sequence):
+        self.path = path
+        self.sequence = sequence
+        self.result_name = sequence # По умолчанию равно имени секвенции
+
+
+video_list: List = []
+
+def get_sequences() -> List[str]:
     """
-    Поиск среди всех изображений в указанной папке
+    Поиск среди всех изображений
     уникальных последовательностей.
     """
-    video_name_list = []
+    for path, folders, files in os.walk(data_folder, topdown=True):
+        for folder in folders:
+            name_list: List = []
+            for file in os.listdir(f'{path}/{folder}'):
+                if is_valid_image_extension(file):
+                    num_part = ''
+                    file, separator = file.split(EXTENSION)
+                    file = file[::-1]
+                    for i in file:
+                        if re.search(r'\d', i):
+                            num_part += i
+                        elif re.search(r'\D', i):
+                            num_part += i
+                            break
+                    separator, name = file.split(num_part)
+                    name = name[::-1]
+                    if name not in name_list:
+                        name_list.append(name)
+            for name in name_list:
+                new_video = Video(f'{path}/{folder}', name)
+                video_list.append(new_video)
+    return video_list
 
-    for file in os.listdir(f'{path}/{folder}'):
-        if is_valid_image_extension(file):
-            num_part = ''
-            file, separator = file.split(EXTENSION)
-            file = file[::-1]
-            for i in file:
-                if re.search(r'\d', i):
-                    num_part += i
-                elif re.search(r'\D', i):
-                    num_part += i
-                    break
-            separator, name = file.split(num_part)
-            name = name[::-1]
-            if name not in video_name_list:
-                video_name_list.append(name)
-    return video_name_list
+
+def get_duplicate_sequences(video_obj):
+    """
+    Проверка уникальности названий видео файлов
+    и добавление идентификатора UUID к названию дубликата.
+    """
+    for file in os.listdir(BASE_DIR / RESULT_FOLDER):
+        if f'{video_obj.sequence}.mp4' == file:
+                video_obj.result_name += str(uuid.uuid4())
+    return video_obj
 
 
 def main():
     """Основная функция монтажа видео."""
-    for path, folders, files in os.walk(data_folder, topdown=True):
-        for folder in folders:
-            for sequence in find_sequences(path, folder):
-                try:
-                    (
-                        ffmpeg
-                        .input(f'{path}/{folder}/{sequence}*{EXTENSION}', pattern_type='glob', framerate=24)
-                        .output(f'{RESULT_FOLDER}/{sequence}.mp4')
-                        .run()
-                    )
-                except FFmpegError as error:
-                    print(error)
+    for video in get_sequences():
+        get_duplicate_sequences(video)
+        try:
+            (
+                ffmpeg
+                .input(f'{video.path}/{video.sequence}*{EXTENSION}', pattern_type='glob', framerate=24)
+                .output(f'{RESULT_FOLDER}/{video.result_name}.mp4')
+                .run()
+            )
+        except FFmpegError as error:
+            print(error)
 
 
 if __name__ == '__main__':
