@@ -3,4 +3,5 @@ MAIN_FOLDER = 'data'
 RESULT_FOLDER = 'video_result'
 
 # Константы для разрешённых типов расширений
-EXTENSION = '.jpg'
+IMAGE_EXTENSION = 'jpg'
+VIDEO_EXTENSION = 'mov'

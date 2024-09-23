@@ -4,7 +4,7 @@ import re
 from typing import List
 import uuid
 
-from constants import EXTENSION
+from constants import IMAGE_EXTENSION, VIDEO_EXTENSION
 import ffmpeg
 from ffmpeg import Error as FFmpegError
 
@@ -27,20 +27,20 @@ class Video:
         self.result_name = sequence # По умолчанию равно имени секвенции
 
 
-video_list: List = []
-
 def get_sequences() -> List[str]:
     """
     Поиск среди всех изображений
     уникальных последовательностей.
     """
+    video_list: List = []
+
     for path, folders, files in os.walk(data_folder, topdown=True):
         for folder in folders:
             name_list: List = []
             for file in os.listdir(f'{path}/{folder}'):
                 if is_valid_image_extension(file):
                     num_part = ''
-                    file, separator = file.split(EXTENSION)
+                    file, separator = file.split(f'.{IMAGE_EXTENSION}')
                     file = file[::-1]
                     for i in file:
                         if re.search(r'\d', i):
@@ -64,7 +64,7 @@ def get_duplicate_sequences(video_obj):
     и добавление идентификатора UUID к названию дубликата.
     """
     for file in os.listdir(BASE_DIR / RESULT_FOLDER):
-        if f'{video_obj.sequence}.mp4' == file:
+        if f'{video_obj.sequence}.{VIDEO_EXTENSION}' == file:
                 video_obj.result_name += str(uuid.uuid4())
     return video_obj
 
@@ -76,8 +76,8 @@ def main():
         try:
             (
                 ffmpeg
-                .input(f'{video.path}/{video.sequence}*{EXTENSION}', pattern_type='glob', framerate=24)
-                .output(f'{RESULT_FOLDER}/{video.result_name}.mp4')
+                .input(f'{video.path}/{video.sequence}*.{IMAGE_EXTENSION}', pattern_type='glob', framerate=24)
+                .output(f'{RESULT_FOLDER}/{video.result_name}.{VIDEO_EXTENSION}')
                 .run()
             )
         except FFmpegError as error:
